@@ -47,7 +47,7 @@ class StockServiceTest {
     }
 
     @Test
-    public void 동시에_1000개의_요청() throws InterruptedException {
+    public void 동시에_100개의_요청() throws InterruptedException {
         int threadCnt = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(32);
 
