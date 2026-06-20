@@ -1,11 +1,9 @@
-package com.example.stock.service;
+package com.example.stock.facade;
 
 import com.example.stock.domain.Stock;
 import com.example.stock.repo.StockRepository;
-import org.apache.catalina.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,22 +17,19 @@ import java.util.concurrent.Executors;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class StockServiceTest {
+class NamedLockStockFacadeTest {
 
-    private static final Logger log = LoggerFactory.getLogger(StockServiceTest.class);
+    private static final Logger log = LoggerFactory.getLogger(NamedLockStockFacadeTest.class);
 
     @Autowired
-    private PessimisticLockService stockService;
+    private NamedLockStockFacade namedLockStockFacade;
 
     @Autowired
     private StockRepository stockRepository;
 
 
-
     @BeforeEach
     public void before() {
-        //상품: 1
-        //재고: 100
         stockRepository.saveAndFlush(new Stock(1L, 100L));
     }
 
@@ -43,13 +38,6 @@ class StockServiceTest {
         stockRepository.deleteAll();
     }
 
-    @Test
-    public void 재고감소() {
-        stockService.decrease(1L,1L);
-        //100 - 1 = 99
-        Stock stock = stockRepository.findById(1L).orElseThrow();
-        assertEquals(99, stock.getQuantity());
-    }
 
     @Test
     public void 동시에_100개의_요청() throws InterruptedException {
@@ -63,8 +51,8 @@ class StockServiceTest {
 
         for (int i = 0; i < threadCnt; i++) {
             executorService.submit(() -> {
-                try{
-                    stockService.decrease(1L,1L);
+                try {
+                    namedLockStockFacade.decrease(1L, 1L);
                 } finally {
                     latch.countDown();
                 }
@@ -76,10 +64,13 @@ class StockServiceTest {
         long end = System.currentTimeMillis();
         long result = end - start;
 
-        log.info("처리 시간: {}",result / 1000.0);
+        log.info("처리 시간: {}", result / 1000.0);
 
         Stock stock = stockRepository.findById(1L).orElseThrow();
         // 100 - (1 * 100) = 0;
         assertEquals(0, stock.getQuantity());
     }
+
+
+
 }
